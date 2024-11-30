@@ -1,10 +1,17 @@
+import os
+from dotenv import load_dotenv
 from scraper import Scraper
 from my_sql_db import ConnectToMySql
 from analyzer import Analyzer
-from dbconfig import host, user, password, database
 
 def main(mode='incremental'):
 
+    load_dotenv()
+    host = os.getenv('host')
+    user = os.getenv('user')
+    password = os.getenv('password')
+    database = os.getenv('database')
+    
     db = ConnectToMySql(host, user, password, database)
     
     db.connect_to_database()
