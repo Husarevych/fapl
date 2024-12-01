@@ -52,8 +52,10 @@ class Scraper:
                 
                 if self.mode == 'incremental' and post_id in self.data:
                     flag = True
+                    break
                 elif self.mode == 'full' and post_time < date(2024, 1, 1):
                     flag = True
+                    break
                 
                 wrap = {'header': post_header,
                         'content': post_content,
