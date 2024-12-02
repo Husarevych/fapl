@@ -1,11 +1,12 @@
 import requests
-import time
 import pandas as pd
+from time import sleep
 from datetime import datetime, timedelta, date
 from bs4 import BeautifulSoup
 
 
 class Scraper:
+    
     def __init__(self, data, mode='incremental'):
         """
         Инициализация парсера с заданным режимом работы.
@@ -22,8 +23,13 @@ class Scraper:
         flag = False
 
         while True:
-
-            responce = requests.get(self.url if not page else f"{self.url}?skip={page}")
+            while True:
+                try:
+                    responce = requests.get(self.url if not page else f"{self.url}?skip={page}")
+                    break
+                except requests.exceptions.RequestException as e:
+                    print(f"Request failed: {e}")
+                    sleep(2)
             responce.encoding = 'Windows-1251'
             soup = BeautifulSoup(responce.text, 'html.parser')
             news = soup.find_all('div', class_='block news')
@@ -40,7 +46,14 @@ class Scraper:
 
                 post_comments = int(article.find('p', class_='f-r').text.split(' (')[1].replace(')', '').strip())
                 
-                post_response = requests.get(url)
+                while True:
+                    try:
+                        post_response = requests.get(url)
+                        break
+                    except Exception as e:
+                        print(f"Request failed: {e}")
+                        sleep(2)
+
                 post_response.encoding = post_response.apparent_encoding
                 post_soup = BeautifulSoup(post_response.text, 'html.parser')
                 
@@ -53,7 +66,7 @@ class Scraper:
                 if self.mode == 'incremental' and post_id in self.data:
                     flag = True
                     break
-                elif self.mode == 'full' and post_time < date(2024, 1, 1):
+                elif self.mode == 'full' and post_time < datetime(2024, 1, 1):
                     flag = True
                     break
                 

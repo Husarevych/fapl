@@ -17,9 +17,7 @@ def main(mode='incremental'):
     db.connect_to_database()
     db.use_database()
 
-    analyzer = Analyzer(db.conn)
-
-    db.create_table('news')
+    # db.create_table('news')
 
     last_posts = db.fetch_recent_post_ids('news')
     
@@ -28,6 +26,7 @@ def main(mode='incremental'):
 
     db.insert_data('news', data)
 
+    # analyzer = Analyzer(db.conn)
     # fetched_data = analyzer.fetch_data('news')
     # analyzer.visualize_popularity(fetched_data)
     # analyzer.tags_analysis(fetched_data) 
