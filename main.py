@@ -3,37 +3,54 @@ from dotenv import load_dotenv
 from scraper import Scraper
 from my_sql_db import ConnectToMySql
 from analyzer import Analyzer
+from typing import Optional
 
-def main(mode='incremental'):
+def main(mode: str = 'incremental') -> None:
+    """
+    Main function for running the scraper, database operations, and analysis.
 
+    Args:
+        mode (str): Determines scraping mode. Defaults to 'incremental'.
+
+    Returns:
+        None
+    """
+
+    # Load environment variables
     load_dotenv()
-    host = os.getenv('host')
-    user = os.getenv('user')
-    password = os.getenv('password')
-    database = os.getenv('database')
+    host: Optional[str] = os.getenv('host')
+    user: Optional[str] = os.getenv('user')
+    password: Optional[str] = os.getenv('password')
+    database: Optional[str] = os.getenv('database')
     
-    db = ConnectToMySql(host, user, password, database)
-    
+    # Initialize database connection
+    db: ConnectToMySql = ConnectToMySql(host, user, password, database)
     db.connect_to_database()
     db.use_database()
 
+    # Optionally create table if needed
     # db.create_table('news')
 
+    # Fetch recent post IDs from the database
     last_posts = db.fetch_recent_post_ids('news')
     
-    scraper = Scraper(last_posts, mode)
+    # Initialize scraper and fetch new data
+    scraper: Scraper = Scraper(last_posts, mode)
     data = scraper.scraper()
 
+    # Insert scraped data into the database
     db.insert_data('news', data)
 
-    # analyzer = Analyzer(db.conn)
+    # Uncomment the following lines for analysis
+    # analyzer: Analyzer = Analyzer(db.conn)
     # fetched_data = analyzer.fetch_data('news')
     # analyzer.visualize_popularity(fetched_data)
     # analyzer.tags_analysis(fetched_data) 
     # analyzer.analyze_comments_by_tags(fetched_data)
 
-
+    # Commit changes and close the connection
     db.commit_and_close()
 
 if __name__ == '__main__':
     main()
+
