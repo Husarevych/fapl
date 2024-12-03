@@ -1,137 +1,159 @@
-import pandas as pd
-import matplotlib.pyplot as plt
+import pandas as pd 
+import matplotlib.pyplot as plt 
+from sqlalchemy.engine import Connection
 
 class Analyzer:
-    def __init__(self, db_connection):
+    
+    """ A class to analyze and visualize data from a database. 
+    Attributes: 
+        connection (Connection): An active SQLAlchemy database connection. """
+    
+    def __init__(self, db_connection: Connection):
         """
-        Инициализация аналитика с подключением к базе данных.
-        :param db_connection: Существующий объект подключения к БД.
+        Initializes the analyzer with a database connection.
+
+        Args:
+            db_connection (Connection): An active SQLAlchemy database connection.
         """
         self.connection = db_connection
 
-    def fetch_data(self, table_name):
+    def fetch_data(self, table_name: str) -> pd.DataFrame:
         """
-        Извлекает данные из указанной таблицы в формате DataFrame.
-        :param table_name: Название таблицы.
-        :return: pandas.DataFrame с данными.
-        """
-        query = f"SELECT * FROM {table_name}"
-        data = pd.read_sql(query, self.connection)
-        return data
+        Fetches data from the specified table into a pandas DataFrame.
 
-    def visualize_popularity(self, data):
+        Args:
+            table_name (str): The name of the table to query.
+
+        Returns:
+            DataFrame: The data retrieved from the table.
         """
-        Строит график популярности статей по просмотрам.
-        :param data: pandas.DataFrame с данными.
+        query = f"SELECT * FROM {table_name}"  # Form the SQL query to select all data from the specified table
+        data = pd.read_sql(query, self.connection)  # Execute the SQL query and read the data into a DataFrame
+        return data  # Return the DataFrame containing the fetched data
+
+    def visualize_popularity(self, data: pd.DataFrame) -> None:
         """
-        # Оставляем только топ-10 записей и сортируем их в порядке убывания
+        Visualizes the popularity of articles by their view counts.
+
+        Args:
+            data (DataFrame): A DataFrame containing article data.
+        """
+        # Keep only the top 20 entries sorted by 'post_visits'
         top_data = data.sort_values('post_visits', ascending=False).head(20)
 
-        # Добавляем колонку с объединением заголовка и даты публикации
-        top_data['header_with_date'] = top_data['header'] + '\n' + '(' + top_data['time'].dt.strftime('%Y-%m-%d') + ')'
+        # Add a new column combining the title and the publication date
+        top_data['header_with_date'] = (
+            top_data['header'] + '\n' + '(' + top_data['time'].dt.strftime('%Y-%m-%d') + ')'
+        )
         
-        # Увеличиваем размер графика
+        # Create a larger figure for better readability
         plt.figure(figsize=(15, 10))
 
-        # Горизонтальные бары для лучшей читаемости
+        # Create horizontal bars for better readability
         bars = plt.barh(top_data['header_with_date'], top_data['post_visits'], color='skyblue')
 
-        # Обратный порядок: самый популярный сверху
+        # Reverse the order so the most popular article is at the top
         plt.gca().invert_yaxis()
 
-        # Добавляем числовые значения просмотров внутрь баров
-        for bar in bars:
-            plt.text(
-                bar.get_width() / 2,  # Располагаем текст центру бара
-                bar.get_y() + bar.get_height() / 2,  # Центрируем текст по высоте
-                f'{int(bar.get_width())}',  # Преобразуем значения просмотров в целые
-                va='center',  # Вертикальное выравнивание
-                ha='center',  # Горизонтальное выравнивание вправо
-                fontsize=12,
-                color='black'  # Черный текст для контраста
+        # Adding numerical view counts inside the bars 
+        for bar in bars: 
+            plt.text(bar.get_width() / 2, # Place text at the center of the bar 
+                     bar.get_y() + bar.get_height() / 2, # Center the text vertically 
+                     f'{int(bar.get_width())}', # Convert view counts to integers 
+                     va='center', # Vertical alignment 
+                     ha='center', # Horizontal alignment 
+                     fontsize=12, # Font size of the text
+                     color='black' # Black text for contrast
             )
 
-        plt.title('Топ-10 популярных статей', fontsize=16)
-        plt.xlabel('Просмотры', fontsize=12)
-        plt.ylabel('Заголовки', fontsize=12)
-        plt.tight_layout()
-        plt.show()
+        # Chart settings
+        plt.title('Top-20 Most Popular Articles', fontsize=16)  # Set the title of the chart with font size 16
+        plt.xlabel('View Counts', fontsize=12)  # Label for the x-axis with font size 12
+        plt.ylabel('Titles', fontsize=12)  # Label for the y-axis with font size 12
+        plt.tight_layout()  # Adjust subplots to fit into the figure area
+        plt.show()  # Display the chart
 
-    def tags_analysis(self, data):
+    def tags_analysis(self, data: pd.DataFrame) -> None:
         """
-        Анализирует частоту встречаемости тегов с отображением количества на графике.
-        :param data: pandas.DataFrame с данными.
+        Analyzes the frequency of tags and displays them on a bar chart.
+
+        Args:
+            data (DataFrame): A DataFrame containing article data.
         """
-        # Разбиваем теги, подсчитываем их частоту
+        # Split tags and count their frequency
         tags = data['post_tags'].str.split(',').explode().value_counts()
 
-        # Берем топ-10 тегов
+        # Get the top 10 tags
         top_tags = tags[:10]
 
-        # Создаем график
-        plt.figure(figsize=(15, 10))
-        bars = plt.bar(top_tags.index, top_tags.values, color='lightcoral')
+        # Create a bar chart
+        plt.figure(figsize=(15, 10)) # Set the size of the figure to 15x10 inches
+        bars = plt.bar(top_tags.index, top_tags.values, color='lightcoral') # Create vertical bars with light coral color
 
-        # Добавляем текст с количеством на каждый бар
+        # Add text displaying the count on each bar
         for bar in bars:
             plt.text(
-                bar.get_x() + bar.get_width() / 2,  # Центр бара по X
-                bar.get_height() / 2,  # Высота текста - центр бара по Y
-                str(bar.get_height()),  # Текст - количество упоминаний
-                ha='center',  # Горизонтальное выравнивание
-                va='center',  # Вертикальное выравнивание
-                fontsize=12,
-                color='black',  # Черный цвет текста
-                fontweight='bold'  # Жирный шрифт для лучшей читаемости
+                bar.get_x() + bar.get_width() / 2,  # Center of the bar on the X-axis
+                bar.get_height() / 2,  # Text height - center of the bar on the Y-axis
+                str(bar.get_height()),  # Text - number of mentions
+                ha='center',  # Horizontal alignment
+                va='center',  # Vertical alignment
+                fontsize=12, # Font size of the text
+                color='black',  # Black text color
+                fontweight='bold'  # Bold font for better readability
             )
 
-        # Настройки графика
-        plt.title('Частота тегов', fontsize=16)
-        plt.xlabel('Теги', fontsize=12)
-        plt.ylabel('Количество упоминаний', fontsize=12)
-        plt.xticks(rotation=45, ha='right')
-        plt.tight_layout()
-        plt.show()
+        # Chart settings
+        plt.title('Tag Frequency', fontsize=16)  # Set the title of the chart with font size 16
+        plt.xlabel('Tags', fontsize=12)  # Label for the x-axis with font size 12
+        plt.ylabel('Number of Mentions', fontsize=12)  # Label for the y-axis with font size 12
+        plt.xticks(rotation=45, ha='right')  # Rotate the x-axis labels by 45 degrees and align them to the right
+        plt.tight_layout()  # Adjust subplots to fit into the figure area
+        plt.show()  # Display the chart
 
-    def analyze_comments_by_tags(self, data):
+    def analyze_comments_by_tags(self, data: pd.DataFrame) -> None:
         """
-        Анализирует количество комментариев в разрезе тегов.
-        :param data: pandas.DataFrame с данными.
+        Analyzes the number of comments for each tag.
+
+        Args:
+            data (DataFrame): A DataFrame containing article data.
         """
-        # Разделение тегов и создание развернутой таблицы
+        # Split tags into separate rows and create a flattened table
         exploded_tags = data.assign(tag=data['post_tags'].str.split(',')).explode('tag')
         
-        # Группировка и суммирование комментариев
+        # Group by tags and sum the comments
         tag_comments = exploded_tags.groupby('tag')['post_comments'].sum().sort_values(ascending=False)
         
-        # Оставляем только топ-10 тегов
+        # Keep only the top 10 tags
         top_tags = tag_comments.head(10)
         
-        # Построение графика
-        plt.figure(figsize=(12, 8))
-        bars = plt.barh(top_tags.index, top_tags.values, color='lightgreen')
-        plt.gca().invert_yaxis()  # Обратный порядок (самые популярные сверху)
+        # Create a horizontal bar chart
+        plt.figure(figsize=(12, 8)) # Set the size of the figure to 12x8 inches
+        bars = plt.barh(top_tags.index, top_tags.values, color='lightgreen') # Create horizontal bars with light green color
+        plt.gca().invert_yaxis()  # Reverse order so most popular tags are at the top
         
-        # Добавляем числовые значения комментариев на барчарт
+        # Adding numerical values of comments to the bar chart
         for bar in bars:
             plt.text(
-                bar.get_width() + 2,  # Расположение текста чуть правее конца бара
-                bar.get_y() + bar.get_height() / 2,
-                f'{int(bar.get_width())}',
-                va='center', fontsize=12
+                bar.get_width() + 2, # Position the text just to the right of the end of the bar
+                bar.get_y() + bar.get_height() / 2, # Center the text vertically within the bar
+                f'{int(bar.get_width())}', # Convert view counts to integers
+                va='center', # Vertical alignment
+                fontsize=12 # Font size of the text
             )
         
-        plt.title('Количество комментариев по тегам', fontsize=16)
-        plt.xlabel('Количество комментариев', fontsize=14)
-        plt.ylabel('Теги', fontsize=14)
-        plt.tight_layout()
-        plt.show()
+        plt.title('Number of Comments by Tags', fontsize=16)  # Set the chart title with font size 16
+        plt.xlabel('Number of Comments', fontsize=14)  # Label for the x-axis with font size 14
+        plt.ylabel('Tags', fontsize=14)  # Label for the y-axis with font size 14
+        plt.tight_layout()  # Adjust subplots to fit into the figure area
+        plt.show()  # Display the chart
 
     def save_to_csv(self, data, filename='output.csv'):
         """
-        Сохраняет данные в CSV.
-        :param data: pandas.DataFrame с данными.
-        :param filename: Имя файла для сохранения.
+        Saves data to a CSV file.
+        :param data: pandas.DataFrame containing the data.
+        :param filename: Name of the file to save the data to.
         """
-        data.to_csv(filename, index=False)
-        print(f"Данные сохранены в {filename}")
+        data.to_csv(filename, index=False) # Save the DataFrame to a CSV file without the index column
+        print(f"Data saved to {filename}")
+

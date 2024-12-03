@@ -24,13 +24,18 @@ def main(mode: str = 'incremental') -> None:
     database: Optional[str] = os.getenv('database')
     
     # Initialize database connection
-    db: ConnectToMySql = ConnectToMySql(host, user, password, database)
-    db.connect_to_database()
-    db.use_database()
+    db: ConnectToMySql = ConnectToMySql(host, user, password, database)  # Create a ConnectToMySql instance with the provided host, user, password, and database
+    db.connect_to_database()  # Establish a connection to the database
+    db.use_database()  # Select the database to use
 
-    # Optionally create table if needed
-    # db.create_table('news')
 
+    # Check if table exists; create if not
+    if not db.table_exists('news'):
+        db.create_table('news')
+        print("Table 'news' created.")
+    else:
+        print("Table 'news' already exists.")
+    
     # Fetch recent post IDs from the database
     last_posts = db.fetch_recent_post_ids('news')
     
