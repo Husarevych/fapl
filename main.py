@@ -47,9 +47,9 @@ def main(mode: str = 'incremental') -> None:
     db.insert_data('news', data)
 
     # Uncomment the following lines for analysis
-    # analyzer: Analyzer = Analyzer(db.conn)
-    # fetched_data = analyzer.fetch_data('news')
-    # analyzer.visualize_popularity(fetched_data)
+    analyzer: Analyzer = Analyzer(db.conn)
+    fetched_data = analyzer.fetch_data('news')
+    analyzer.visualize_popularity(fetched_data)
     # analyzer.tags_analysis(fetched_data) 
     # analyzer.analyze_comments_by_tags(fetched_data)
 
